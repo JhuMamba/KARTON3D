@@ -1,0 +1,12 @@
+{
+  "name": "karton",
+  "version": "0.1.0",
+  "dependencies": [
+    "sdl2",
+    "glfw3",
+    "glad",
+    "stb",
+    "glm"
+  ],
+  "builtin-baseline": "7e21420f775f72ae938bdeb5e6068f722088f06a"
+}
