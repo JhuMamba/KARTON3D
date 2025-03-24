@@ -240,7 +240,7 @@ int main()
 
             float angle = currentFrame * orbitSpeed + glm::radians(36.0f * i);
             float x = cos(angle) * radius;
-            float y = tan(angle * 2);
+            float y = tan(angle * 4);
             float z = sin(angle) * radius;
 
             model = glm::translate(model, glm::vec3(x, y, z));
