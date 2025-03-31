@@ -1,4 +1,4 @@
-﻿add_executable (karton "karton.cpp" "karton.h" "stb_image.cpp" "include/utils/filemanager.h")
+﻿add_executable (karton "karton.cpp" "karton.h" "stb_image.cpp" "include/utils/filemanager.h" "include/rendering/Lighting/light.h")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET karton PROPERTY CXX_STANDARD 20)
