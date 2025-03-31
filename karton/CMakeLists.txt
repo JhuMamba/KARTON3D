@@ -1,4 +1,4 @@
-﻿add_executable (karton "karton.cpp" "karton.h" "stb_image.cpp")
+﻿add_executable (karton "karton.cpp" "karton.h" "stb_image.cpp" "include/utils/filemanager.h")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET karton PROPERTY CXX_STANDARD 20)
@@ -12,6 +12,7 @@ find_package(glm REQUIRED)
 target_include_directories(karton PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/include
 	${CMAKE_CURRENT_SOURCE_DIR}/include/rendering
+	${CMAKE_CURRENT_SOURCE_DIR}/include/utils
 )
 
 target_link_libraries(karton

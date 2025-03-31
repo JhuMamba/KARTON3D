@@ -9,12 +9,11 @@
 #include <rendering/shader.h>
 #include <rendering/camera.h>
 
+#include <filemanager.h>
+
 #include <iostream>
 
-//constants
-std::string ASSETS_DIR = "assets/";
-std::string SHADERS_DIR = ASSETS_DIR + "shaders/";
-std::string SPRITES_DIR = ASSETS_DIR + "sprites/";
+
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -77,8 +76,8 @@ int main()
     glEnable(GL_DEPTH_TEST);
 
     // shader
-    Shader ourShader((SHADERS_DIR + "texture.vert").c_str(), (SHADERS_DIR + "texture.frag").c_str());
-
+    Shader ourShader(FileManager::GetShaderPathCStr("texture.vert"), FileManager::GetShaderPathCStr("texture.frag"));
+    std::cout << FileManager::GetShaderPathCStr("texture.frag") << std::endl;
     float vertices[] = {
         -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
          0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
@@ -166,7 +165,7 @@ int main()
 
     int width, height, nrChannels;
     stbi_set_flip_vertically_on_load(true);
-    unsigned char* data = stbi_load((SPRITES_DIR + "tile.jpg").c_str(), &width, &height, &nrChannels, 0);
+    unsigned char* data = stbi_load(FileManager::GetSpritePathCStr("tile.jpg"), &width, &height, &nrChannels, 0);
     if (data)
     {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
@@ -187,7 +186,7 @@ int main()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    data = stbi_load((SPRITES_DIR + "blood.jpg").c_str(), &width, &height, &nrChannels, 0);
+    data = stbi_load(FileManager::GetSpritePathCStr("blood.jpg"), &width, &height, &nrChannels, 0);
     if (data)
     {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
@@ -238,13 +237,13 @@ int main()
             float radius = 5.0f;
             float orbitSpeed = 1.0f;
 
-            float angle = currentFrame * orbitSpeed + glm::radians(36.0f * i);
+            float angle = lastFrame * orbitSpeed + glm::radians(36.0f * i);
             float x = cos(angle) * radius;
             float y = tan(angle * 4);
             float z = sin(angle) * radius;
 
             model = glm::translate(model, glm::vec3(x, y, z));
-            model = glm::rotate(model, angle * 2.0f, glm::vec3(0.0f, 1.0f, 0.0f)); // spin the cube around its axis
+            model = glm::rotate(model, angle * 2.0f, glm::vec3(0.0f, 1.0f, 0.0f));
             ourShader.setMat4("model", model);
 
             glDrawArrays(GL_TRIANGLES, 0, 36);
