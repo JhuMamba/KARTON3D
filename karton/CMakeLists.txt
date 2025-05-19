@@ -1,4 +1,4 @@
-﻿add_executable (karton "karton.cpp" "karton.h" "stb_image.cpp" "include/utils/filemanager.h" "include/rendering/Lighting/light.h")
+﻿add_executable (karton "karton.cpp" "karton.h" "stb_image.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET karton PROPERTY CXX_STANDARD 20)
@@ -8,11 +8,14 @@ find_package(SDL2 REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(glad REQUIRED)
 find_package(glm REQUIRED)
+find_package(assimp REQUIRED)
+find_package(draco REQUIRED)
+
+
 
 target_include_directories(karton PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/include
-	${CMAKE_CURRENT_SOURCE_DIR}/include/rendering
-	${CMAKE_CURRENT_SOURCE_DIR}/include/utils
+	${CMAKE_CURRENT_SOURCE_DIR}/include/core
 )
 
 target_link_libraries(karton
@@ -22,6 +25,9 @@ target_link_libraries(karton
     glfw
     glad::glad
     glm::glm
+    assimp::assimp
+    draco::draco
+
 )
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
