@@ -1,4 +1,4 @@
-﻿add_executable (karton "karton.cpp" "karton.h" "stb_image.cpp")
+﻿add_executable (karton "karton.cpp" "karton.h" "stb_image.cpp" "include/core/rendering/textureloader/opengltextureloader.cpp"  "include/core/rendering/model/openglmodel.cpp" "include/core/rendering/renderfactory/openglrenderfactory.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET karton PROPERTY CXX_STANDARD 20)

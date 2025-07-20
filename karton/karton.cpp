@@ -1,179 +1,107 @@
-﻿#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+﻿#include <memory>
+
 #include <stb_image.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
-#include <rendering/shader.h>
 #include <rendering/camera.h>
-#include <rendering/model.h>
+#include <rendering/model/model.h>
+#include <rendering/renderingbackendprovider.h>
+
+#include <rendering/shader/OpenGLShader.h>
 
 #include <utils/filemanager.h>
+#include <utils/enums.h>
 
-#include <iostream>
-
-
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void processInput(GLFWwindow* window);
-
-
-// settings
+// Constants
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-// camera
+// Global State
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
-float lastX = SCR_WIDTH / 2.0f;
-float lastY = SCR_HEIGHT / 2.0f;
-bool firstMouse = true;
 
-// timing
+bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-// lighting
-glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+void processInput(Window& window);
+void updateMouse(double xposIn, double yposIn);
 
-int main()
-{
-    // init
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+int main() {
+    
+    BackendType backend = BackendType::OpenGL;
 
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
+    std::unique_ptr<Window> window = RenderingBackendProvider::CreateWindow(backend);
+    window->Init(SCR_WIDTH, SCR_HEIGHT, "KARTON");
 
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
-    if (window == NULL)
-    {
-        std::cout << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        return -1;
-    }
-    glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetScrollCallback(window, scroll_callback);
+    std::unique_ptr<Renderer> renderer = RenderingBackendProvider::CreateRenderer(backend);
+    renderer->Init();
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    std::shared_ptr<RenderFactory> renderFactory = RenderingBackendProvider::CreateFactory(backend);
 
-    stbi_set_flip_vertically_on_load(true);
+    std::unique_ptr<OpenGLShader> shader = std::make_unique<OpenGLShader>(FileManager::GetShaderPathCStr("default_model.vert"),
+        FileManager::GetShaderPathCStr("default_model.frag"));
 
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-    {
-        std::cout << "Failed to initialize GLAD" << std::endl;
-        return -1;
-    }
+    std::shared_ptr<Model> model = renderFactory->CreateModel(FileManager::GetModelPath("backpack/backpack.obj"));
 
-    // configure state
-    glEnable(GL_DEPTH_TEST);
-
-    // shader
-    Shader shader(FileManager::GetShaderPathCStr("default_model.vert"), FileManager::GetShaderPathCStr("default_model.frag"));
-
-    Model backpackModel(FileManager::GetModelPath("backpack/backpack.obj"));
-
-
-    // render loop
-    // -----------
-    while (!glfwWindowShouldClose(window))
-    {
-        // per-frame time logic
-        // --------------------
-        float currentFrame = static_cast<float>(glfwGetTime());
+    while (!window->ShouldClose()) {
+        float currentFrame = window->GetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        // input
-        // -----
-        processInput(window);
+        processInput(*window);
 
-        // render
-        // ------
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        renderer->Clear();
 
-        shader.use();
-
-        // view/projection transformations
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom),
+            (float)SCR_WIDTH / (float)SCR_HEIGHT,
+            0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
-        shader.setMat4("projection", projection);
-        shader.setMat4("view", view);
+        glm::mat4 modelMat = glm::mat4(1.0f);
 
-        // world transformation
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-        shader.setMat4("model", model);
+        renderer->BeginFrame();
+        renderer->SetViewProjection(view, projection);
+        renderer->RenderModel(modelMat, *model, *shader);
+        renderer->EndFrame();
 
-        backpackModel.Draw(shader);
-
-        // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-        // -------------------------------------------------------------------------------
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+        window->SwapBuffers();
+        window->PollEvents();
     }
-
-    // glfw: terminate, clearing all previously allocated GLFW resources.
-    // ------------------------------------------------------------------
-    glfwTerminate();
+    window->Terminate();
     return 0;
 }
 
-void processInput(GLFWwindow* window)
-{
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-
-    float cameraSpeed = static_cast<float>(2.5 * deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+void processInput(Window& window) {
+    float cameraSpeed = 2.5f * deltaTime;
+    if (window.IsKeyPressed(GLFW_KEY_ESCAPE))
+        exit(0);
+    if (window.IsKeyPressed(GLFW_KEY_W))
         camera.Position += cameraSpeed * camera.Front;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    if (window.IsKeyPressed(GLFW_KEY_S))
         camera.Position -= cameraSpeed * camera.Front;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    if (window.IsKeyPressed(GLFW_KEY_A))
         camera.Position -= glm::normalize(glm::cross(camera.Front, camera.Up)) * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    if (window.IsKeyPressed(GLFW_KEY_D))
         camera.Position += glm::normalize(glm::cross(camera.Front, camera.Up)) * cameraSpeed;
-    camera.Position.y = 0.0;
+
+    double mouseX = window.GetMouseX();
+    double mouseY = window.GetMouseY();
+
+    updateMouse(mouseX, mouseY);
+
+    camera.Position.y = 0.0f;
+    window.ResetMouseDelta();
+    window.ResetScrollOffsets();
 }
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-}
-
-void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
-{
-    float xpos = static_cast<float>(xposIn);
-    float ypos = static_cast<float>(yposIn);
-
-    if (firstMouse)
-    {
-        lastX = xpos;
-        lastY = ypos;
-        firstMouse = false;
-    }
-
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos;
-    lastX = xpos;
-    lastY = ypos;
-
+void updateMouse(double xoffset, double yoffset) {
     float sensitivity = 0.13f;
     xoffset *= sensitivity;
     yoffset *= sensitivity;
 
-    camera.Yaw += xoffset;
-    camera.Pitch += yoffset;
+    camera.Yaw += static_cast<float>(xoffset);
+    camera.Pitch += static_cast<float>(yoffset);
 
     if (camera.Pitch > 89.0f)
         camera.Pitch = 89.0f;
@@ -185,9 +113,4 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
     front.y = sin(glm::radians(camera.Pitch));
     front.z = sin(glm::radians(camera.Yaw)) * cos(glm::radians(camera.Pitch));
     camera.Front = glm::normalize(front);
-}
-
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
-    camera.ProcessMouseScroll(static_cast<float>(yoffset));
-}
+    };

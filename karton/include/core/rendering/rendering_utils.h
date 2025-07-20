@@ -19,9 +19,27 @@ struct Vertex
 
 struct Texture
 {
-	unsigned int id;
-	std::string type;
-	std::string path;
+private:
+	unsigned int _id;
+	std::string _type;
+	std::string _path;
+
+public:
+
+	unsigned int id() const { return _id; }
+	const std::string& type() const { return _type; }
+	const std::string& path() const { return _path; }
+
+	Texture(unsigned int id, std::string_view type, std::string_view path)
+		: _id(id), _type(type), _path(path) {}
+
+	bool operator==(const Texture& other) const {
+		return _id == other.id() && _type == other.type() && _path == other.path();
+	}
+
+	bool operator!=(const Texture& other) const {
+		return !(*this == other);
+	}
 };
 
 #endif // !RENDERING_UTILS_H
